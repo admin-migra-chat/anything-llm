@@ -53,10 +53,15 @@ export default function AccountModal({ user, hideModal }) {
 
       if (storedUser) {
         storedUser.username = data.username;
+        storedUser.userLang = data.userLang;
+        storedUser.zipCode = data.zipCode;
         localStorage.setItem(AUTH_USER, JSON.stringify(storedUser));
       }
       showToast("Profile updated.", "success", { clear: true });
       hideModal();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } else {
       showToast(`Failed to update user: ${error}`, "error");
     }
@@ -167,6 +172,7 @@ export default function AccountModal({ user, hideModal }) {
               <div className="flex flex-row gap-x-8">
                 <ThemePreference />
                 <LanguagePreference />
+                <ZipCodeInput user={user} />
               </div>
             </div>
             <div className="flex justify-between items-center border-t border-theme-modal-border pt-4 p-6">
@@ -248,6 +254,30 @@ function ThemePreference() {
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function ZipCodeInput({ user }) {
+
+  return (
+    <div>
+      <label
+        htmlFor="zipCode"
+        className="block mb-2 text-sm font-medium text-white"
+      >
+        ZIP Code
+      </label>
+      <input
+        name="zipCode"
+        type="text"
+        className="border-none bg-theme-settings-input-bg w-24 px-4 focus:outline-primary-button active:outline-primary-button outline-none text-white text-sm rounded-lg block py-2"
+        placeholder="12345"
+        pattern="[0-9]{5}"
+        maxLength={5}
+        minLength={5}
+        defaultValue={user?.zipCode || ""}
+      />
     </div>
   );
 }
