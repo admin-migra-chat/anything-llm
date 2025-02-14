@@ -42,6 +42,7 @@
     "openrouter",
     "pagerender",
     "Qdrant",
+    "rerank",
     "royalblue",
     "SearchApi",
     "searxng",

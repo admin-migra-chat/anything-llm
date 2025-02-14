@@ -2,7 +2,10 @@ const { v4: uuidv4 } = require("uuid");
 const { DocumentManager } = require("../DocumentManager");
 const { WorkspaceChats } = require("../../models/workspaceChats");
 const { getVectorDbClass, getLLMProvider } = require("../helpers");
-const { writeResponseChunk } = require("../helpers/chat/responses");
+const {
+  writeResponseChunk,
+  translateMessage,
+} = require("../helpers/chat/responses");
 const { chatPrompt, sourceIdentifier, recentChatHistory } = require("./index");
 const {
   EphemeralAgentHandler,
@@ -106,14 +109,23 @@ async function chatSync({
   const messageLimit = workspace?.openAiHistory || 20;
   const hasVectorizedSpace = await VectorDb.hasNamespace(workspace.slug);
   const embeddingsCount = await VectorDb.namespaceCount(workspace.slug);
+  const userLang = user?.userLang || "en";
+  const needsTranslation = userLang !== "en";
 
   // User is trying to query-mode chat a workspace that has no data in it - so
   // we should exit early as no information can be found under these conditions.
   if ((!hasVectorizedSpace || embeddingsCount === 0) && chatMode === "query") {
-    const textResponse =
+    let textResponse =
       workspace?.queryRefusalResponse ??
       "There is no relevant information in this workspace to answer your query.";
-
+    if (needsTranslation) {
+      textResponse = await translateMessage(
+        LLMConnector,
+        textResponse,
+        "en",
+        userLang
+      );
+    }
     await WorkspaceChats.new({
       workspaceId: workspace.id,
       prompt: String(message),
@@ -222,10 +234,17 @@ async function chatSync({
   // If in query mode and no context chunks are found from search, backfill, or pins -  do not
   // let the LLM try to hallucinate a response or use general knowledge and exit early
   if (chatMode === "query" && contextTexts.length === 0) {
-    const textResponse =
+    let textResponse =
       workspace?.queryRefusalResponse ??
       "There is no relevant information in this workspace to answer your query.";
-
+    if (needsTranslation) {
+      textResponse = await translateMessage(
+        LLMConnector,
+        textResponse,
+        "en",
+        userLang
+      );
+    }
     await WorkspaceChats.new({
       workspaceId: workspace.id,
       prompt: message,
@@ -396,13 +415,23 @@ async function streamChat({
   const messageLimit = workspace?.openAiHistory || 20;
   const hasVectorizedSpace = await VectorDb.hasNamespace(workspace.slug);
   const embeddingsCount = await VectorDb.namespaceCount(workspace.slug);
+  const userLang = user?.userLang || "en";
+  const needsTranslation = userLang !== "en";
 
   // User is trying to query-mode chat a workspace that has no data in it - so
   // we should exit early as no information can be found under these conditions.
   if ((!hasVectorizedSpace || embeddingsCount === 0) && chatMode === "query") {
-    const textResponse =
+    let textResponse =
       workspace?.queryRefusalResponse ??
       "There is no relevant information in this workspace to answer your query.";
+    if (needsTranslation) {
+      textResponse = await translateMessage(
+        LLMConnector,
+        textResponse,
+        "en",
+        userLang
+      );
+    }
     writeResponseChunk(response, {
       id: uuid,
       type: "textResponse",
@@ -524,9 +553,17 @@ async function streamChat({
   // If in query mode and no context chunks are found from search, backfill, or pins -  do not
   // let the LLM try to hallucinate a response or use general knowledge and exit early
   if (chatMode === "query" && contextTexts.length === 0) {
-    const textResponse =
+    let textResponse =
       workspace?.queryRefusalResponse ??
       "There is no relevant information in this workspace to answer your query.";
+    if (needsTranslation) {
+      textResponse = await translateMessage(
+        LLMConnector,
+        textResponse,
+        "en",
+        userLang
+      );
+    }
     writeResponseChunk(response, {
       id: uuid,
       type: "textResponse",
