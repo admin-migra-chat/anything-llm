@@ -255,6 +255,21 @@ function formatChatHistory(
   });
 }
 
+async function translateMessage(LLMConnector, text, fromLang, toLang) {
+  const messages = [
+    {
+      role: "system",
+      content: `Translate the following text from ${fromLang} to ${toLang}. Preserve any markdown formatting, code blocks, or special characters. Only return the translated text without any explanations.`,
+    },
+    { role: "user", content: text },
+  ];
+
+  const { textResponse } = await LLMConnector.getChatCompletion(messages, {
+    temperature: 0.1,
+  });
+  return textResponse;
+}
+
 module.exports = {
   handleDefaultStreamResponseV2,
   convertToChatHistory,
@@ -262,4 +277,5 @@ module.exports = {
   writeResponseChunk,
   clientAbortedHandler,
   formatChatHistory,
+  translateMessage,
 };
