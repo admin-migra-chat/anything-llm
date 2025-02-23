@@ -10,6 +10,8 @@ const { EventLogs } = require("./eventLogs");
  * @property {string} role
  * @property {boolean} suspended
  * @property {number|null} dailyMessageLimit
+ * @property {string} userLang
+ * @property {string|null} zipCode
  */
 
 const User = {
@@ -18,6 +20,8 @@ const User = {
     // Used for generic updates so we can validate keys in request body
     "username",
     "password",
+    "userLang",
+    "zipCode",
     "pfpFilename",
     "role",
     "suspended",
@@ -34,6 +38,23 @@ const User = {
       } catch (e) {
         throw new Error(e.message);
       }
+    },
+    userLang: (userLang = "en") => {
+      // eslint-disable-next-line prettier/prettier
+      const VALID_LANGUAGES = ["en", "de", "es", "fr", "ja", "pt", "ar", "cs", "it", "ko", "nl", "zh"];
+
+      if (!VALID_LANGUAGES.includes(userLang)) {
+        throw new Error(
+          `Invalid preferred language. Allowed languages are: ${VALID_LANGUAGES.join(", ")}`
+        );
+      }
+      return String(userLang);
+    },
+    zipCode: (zipCode = null) => {
+      if (zipCode && !/^\d{5}$/.test(zipCode)) {
+        throw new Error("Invalid zip code. Must be a 5-digit number.");
+      }
+      return zipCode ? String(zipCode) : null;
     },
     role: (role = "default") => {
       const VALID_ROLES = ["default", "admin", "manager"];
@@ -75,6 +96,8 @@ const User = {
   create: async function ({
     username,
     password,
+    userLang,
+    zipCode,
     role = "default",
     dailyMessageLimit = null,
   }) {
@@ -96,6 +119,8 @@ const User = {
         data: {
           username: this.validations.username(username),
           password: hashedPassword,
+          userLang: this.validations.userLang(userLang),
+          zipCode: this.validations.zipCode(zipCode),
           role: this.validations.role(role),
           dailyMessageLimit:
             this.validations.dailyMessageLimit(dailyMessageLimit),
